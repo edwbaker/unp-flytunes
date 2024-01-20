@@ -47,7 +47,7 @@ server <- function(input, output) {
         counts_subset <- counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]
         max_bins <- max(counts_subset[, bins])
         counts_subset <- counts_subset[counts_subset$file == input$file, bins]
-        barplot(as.numeric(counts_subset), names.arg = n_bins, main = "Classification counts", las=2)
+        barplot(as.numeric(counts_subset), names.arg = n_bins, main = "Classification counts", las=2, ylim=c(0, max_bins))
     })
 
     output$spectrogram <- renderPlot({
