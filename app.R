@@ -21,19 +21,10 @@ ui <- fluidPage(
             "Workflow:",
             choices = unique(counts$workflow_name),
             selected = unique(counts$workflow_name)[1]),
-          selectInput(
-            "workflow_version",
-            "Workflow version:",
-            choices = unique(counts$workflow_version),
-            selected = unique(counts$workflow_version)[1]),
-          selectizeInput(
-            "file",
-            "Select audio file:",
-            choices = unique(counts$file),
-            selected = unique(counts$file)[1])
+          uiOutput("workflow_version"),
+          uiOutput("file")
         ),
 
-        # Show a plot of the generated distribution
         mainPanel(
            plotOutput("spectrogram"),
            plotOutput("barPlot"),
@@ -43,17 +34,39 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    output$barPlot <- renderPlot({
-        counts_subset <- counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]
-        max_bins <- max(counts_subset[, bins])
-        counts_subset <- counts_subset[counts_subset$file == input$file, bins]
-        barplot(as.numeric(counts_subset), names.arg = n_bins, main = "Classification counts", las=2, ylim=c(0, max_bins))
+  output$workflow_version <- renderUI({
+    selectInput(
+      "workflow_version",
+      "Workflow version:",
+      choices = unique(counts[counts$workflow_name == input$workflow,]$workflow_version),
+      selected = unique(counts[counts$workflow_name == input$workflow,]$workflow_version)[1])
+  })
+  
+  output$file <- renderUI({
+    selectizeInput(
+      "file",
+      "File:",
+      choices = unique(counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]$file),
+      selected = unique(counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]$file)[1])
+  })
+  
+  output$barPlot <- renderPlot({
+    tryCatch({
+      counts_subset <- counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]
+      max_bins <- max(counts_subset[, bins])
+      counts_subset <- counts_subset[counts_subset$file == input$file, bins]
+      barplot(as.numeric(counts_subset), names.arg = n_bins, main = "Classification counts", las=2, ylim=c(0, max_bins))
     })
+  })
 
-    output$spectrogram <- renderPlot({
-        w <- readMP3(paste0("data/audio/", input$file))
-        spectro(w, osc=TRUE)
+  output$spectrogram <- renderPlot({
+    tryCatch({
+      w <- readMP3(paste0("data/audio/", input$file))
+      spectro(w, osc=TRUE)
     })
+  })
+    
+    
 }
 
 # Run the application 
