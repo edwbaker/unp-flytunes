@@ -6,10 +6,10 @@ library(tuneR)
 counts <- read.csv("data/flytunes-classifications-processed-counts.csv")
 audio_files <- list.files("data/audio", pattern = "*.mp3")
 counts <- counts[counts$file %in% audio_files,]
+
 bins <- names(counts)[!(names(counts) %in% c("workflow_name", "workflow_version", "file"))]
 n_bins <- str_replace(bins, "don.t", "don't")
 n_bins <- str_replace_all(n_bins, "n\\.", "")
-
 n_bins <- str_replace_all(n_bins, "\\.", " ")
 
 ui <- fluidPage(
@@ -32,7 +32,6 @@ ui <- fluidPage(
     )
 )
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
   output$workflow_version <- renderUI({
     selectInput(
@@ -53,6 +52,9 @@ server <- function(input, output) {
   output$barPlot <- renderPlot({
     tryCatch({
       counts_subset <- counts[counts$workflow_name == input$workflow & counts$workflow_version == input$workflow_version,]
+      if (nrow(counts_subset) == 0) {
+        return()
+      }
       max_bins <- max(counts_subset[, bins])
       counts_subset <- counts_subset[counts_subset$file == input$file, bins]
       barplot(as.numeric(counts_subset), names.arg = n_bins, main = "Classification counts", las=2, ylim=c(0, max_bins))
@@ -61,12 +63,14 @@ server <- function(input, output) {
 
   output$spectrogram <- renderPlot({
     tryCatch({
-      w <- readMP3(paste0("data/audio/", input$file))
+      file_path <- paste0("data/audio/", input$file)
+      if (file_path == "data/audio/") {
+        return()
+      }
+      w <- readMP3(paste0(file_path))
       spectro(w, osc=TRUE)
     })
   })
-    
-    
 }
 
 # Run the application 
